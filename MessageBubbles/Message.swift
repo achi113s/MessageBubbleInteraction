@@ -120,6 +120,12 @@ struct Message: View {
                                             selectedReactionIndex = data.index
                                         }
                                     }
+                                } else {
+                                    Task {
+                                        await MainActor.run {
+                                            selectedReactionIndex = -1
+                                        }
+                                    }
                                 }
                             }
                         default:
