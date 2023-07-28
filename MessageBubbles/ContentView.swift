@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    let message: String = "I need an iPod classic with Bluetooth capability."
-    let user: String = "Johnny"
+    let message: String = "I've been studying iOS development for 5 months now! 🤩"
+    let user: String = "Giorgio"
     
     let message2: String = "Yeah!"
     let user2: String = "Billy"

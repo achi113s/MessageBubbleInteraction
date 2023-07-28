@@ -32,6 +32,9 @@ struct Message: View {
     
     @State private var lastCalledReaction: String = "None"
     
+    @State private var reactions: [MessageReactionType] = []
+    @State private var showReactionOnMessage: Bool = false
+    
     var body: some View {
         ZStack {
             Rectangle()
@@ -82,11 +85,27 @@ struct Message: View {
                            value: showReactions
                 )
                 
-                MessageBlock(messageText: message, userName: user)
-                    .scaleEffect(messageReactionGestureState.isLongPressing ? 0.95 : 1.0)
-                    .animation(.easeIn(duration: reactionAnimationDuration), value: messageReactionGestureState.isLongPressing)
+                ZStack(alignment: .topTrailing) {
+                    MessageBlock(messageText: message, userName: user)
+                    
+                    if showReactionOnMessage {
+                        ForEach(reactions, id: \.self) { reaction in
+                            ZStack {
+                                MessageReaction(symbol: reaction.symbol,
+                                                color: reaction.color,
+                                                size: 30,
+                                                description: reaction
+                                )
+                                .offset(x: 10, y: -10)
+                            }
+                            .transition(AnyTransition.scale.animation(.spring()))
+                        }
+                    }
+                }
+                .scaleEffect(messageReactionGestureState.isLongPressing ? 0.95 : 1.0)
+                .animation(.interpolatingSpring(stiffness: 300, damping: 10), value: messageReactionGestureState.isLongPressing)
                 
-                Text("Last Reaction: \(lastCalledReaction)")
+//                Text("Last Reaction: \(lastCalledReaction)")
             }
             .onPreferenceChange(MessageBlockGeometrySizePreferenceKey.self) { value in
                 reactionIconSpacing = value.width / 25
@@ -138,6 +157,8 @@ struct Message: View {
                     .onEnded { _ in
                         if selectedReactionIndex != -1 {
                             lastCalledReaction = descriptions[selectedReactionIndex].description
+                            reactions.append(descriptions[selectedReactionIndex])
+                            showReactionOnMessage = true
                         }
                         selectedReactionIndex = -1
                         print("set selected to -1")
