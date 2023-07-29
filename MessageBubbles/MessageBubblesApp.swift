@@ -11,7 +11,7 @@ import SwiftUI
 struct MessageBubblesApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            CoinView()
                 .preferredColorScheme(.light)
         }
     }
