@@ -11,8 +11,6 @@ struct MessageBlock: View {
     var messageText: String
     var userName: String
     
-    @State var reactions: [MessageReactionType] = [MessageReactionType]()
-    
     var body: some View {
         VStack {
             Text("**\(userName)** \(messageText)")

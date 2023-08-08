@@ -8,9 +8,8 @@
 import CoreHaptics
 import SwiftUI
 
-struct Message: View {
-    let message: String
-    let user: String
+struct MessageBubble: View {
+    let message: MessageData
     
     let minimumLongPressDuration = 0.5
     let reactionAnimationDuration = 0.2
@@ -20,6 +19,10 @@ struct Message: View {
     let offsetsX: [CGFloat] = [0, -5, 5, 0]
     let angles: [Double] = [-25, -10, 10, 20]
     let reactionSize: CGFloat = 45.0
+    
+    init(_ message: MessageData) {
+        self.message = message
+    }
     
     @GestureState private var messageReactionGestureState = MessageReactionGestureState.inactive
     @State private var showReactions: Bool = false
@@ -31,12 +34,12 @@ struct Message: View {
     @State private var reactionsData: [ReactionPreferenceData] = [ReactionPreferenceData]()
     
     @State private var lastCalledReaction: String = "None"
-    
-    @State private var reactions: [MessageReactionType] = []
+
     @State private var showReactionOnMessage: Bool = false
     
     var body: some View {
         ZStack {
+            // Backdrop
             Rectangle()
                 .fill(.gray)
                 .opacity(showReactions ? 0.3 : 0.001)
@@ -54,10 +57,9 @@ struct Message: View {
                                 .font(.system(size: 10))
                                 .opacity(selectedReactionIndex == index ? 1.0 : 0.0)
                             
-                            MessageReaction(symbol: descriptions[index].symbol,
-                                            color: descriptions[index].color,
-                                            size: reactionSize,
-                                            description: descriptions[index]
+                            MessageReaction(
+                                reactionType: descriptions[index],
+                                size: reactionSize
                             )
                             .scaleEffect(selectedReactionIndex == index ? 1.2 : 1.0)
                         }
@@ -67,11 +69,13 @@ struct Message: View {
                             GeometryReader { geo in
                                 Rectangle()
                                     .fill(Color.clear)
+                                    // Add this reaction's data to the ReactionPreferenceData
+                                    // PreferenceKey.
                                     .updateReactionPreferenceData(
-                                        [ReactionPreferenceData(index: index,
-                                                                bounds: geo.frame(in: .named("message"))
-                                                               )
-                                        ]
+                                        [ReactionPreferenceData(
+                                            index: index,
+                                            bounds: geo.frame(in: .named("message"))
+                                        )]
                                     )
                             }
                         )
@@ -86,17 +90,13 @@ struct Message: View {
                 )
                 
                 ZStack(alignment: .topTrailing) {
-                    MessageBlock(messageText: message, userName: user)
+                    MessageBlock(messageText: message.messageText, userName: message.user)
                     
                     if showReactionOnMessage {
-                        ForEach(reactions, id: \.self) { reaction in
+                        ForEach(message.reactions, id: \.self) { reaction in
                             ZStack {
-                                MessageReaction(symbol: reaction.symbol,
-                                                color: reaction.color,
-                                                size: 30,
-                                                description: reaction
-                                )
-                                .offset(x: 10, y: -10)
+                                MessageReaction(reactionType: reaction)
+                                    .offset(x: 10, y: -10)
                             }
                             .transition(AnyTransition.scale.animation(.spring()))
                         }
@@ -104,14 +104,19 @@ struct Message: View {
                 }
                 .scaleEffect(messageReactionGestureState.isLongPressing ? 0.95 : 1.0)
                 .animation(.interpolatingSpring(stiffness: 300, damping: 10), value: messageReactionGestureState.isLongPressing)
-                
-//                Text("Last Reaction: \(lastCalledReaction)")
             }
+            // We use this PreferenceKey to to scale the width of the reaction icon set
+            // with the width of the message bubble. We use the icon spacing to do this
+            // because they are nested in an HStack.
             .onPreferenceChange(MessageBlockGeometrySizePreferenceKey.self) { value in
                 reactionIconSpacing = value.width / 25
             }
+            // This PreferenceKey allows us to monitor which reaction the user is
+            // hovering over with the drag gesture.
             .onPreferenceChange(ReactionPreferenceKey.self) { value in
                 reactionsData = value
+                // reactionsData will contain the index and bounds of each
+                // of the reactions.
             }
             .gesture(
                 LongPressGesture(minimumDuration: minimumLongPressDuration)
@@ -134,6 +139,9 @@ struct Message: View {
                             state = .dragging(translation: dragValue?.translation ?? .zero)
                             if let location = dragValue?.location {
                                 if let data = reactionsData.first(where: { $0.bounds.contains(location) }) {
+                                    // We find which reaction contains the location of the drag
+                                    // gesture and set the selectedReactionIndex to that
+                                    // reaction's index. This causes the reaction to animate.
                                     Task {
                                         await MainActor.run {
                                             selectedReactionIndex = data.index
@@ -155,11 +163,16 @@ struct Message: View {
                         }
                     }
                     .onEnded { _ in
+                        // When the gesture ends, perform the reaction if it was selected
+                        // or do nothing if no reaction was highlighted.
                         if selectedReactionIndex != -1 {
                             lastCalledReaction = descriptions[selectedReactionIndex].description
-                            reactions.append(descriptions[selectedReactionIndex])
+                            message.addReaction(descriptions[selectedReactionIndex])
                             showReactionOnMessage = true
                         }
+                        
+                        // This will always happen, so why does the reaction not get deselected
+                        // sometimes?
                         selectedReactionIndex = -1
                         print("set selected to -1")
                         showReactions = false
@@ -172,15 +185,17 @@ struct Message: View {
 }
 
 struct Message_Previews: PreviewProvider {
-    static let message: String = "I need an iPod classic with Bluetooth capability."
-    static let user: String = "Johnny"
+    static let message: MessageData = MessageData(
+        user: "Johnny",
+        messageText: "I need an iPod classic with Bluetooth capability.",
+        reactions: [])
     
     static var previews: some View {
-        Message(message: message, user: user)
+        MessageBubble(message)
     }
 }
 
-extension Message {
+extension MessageBubble {
     private func prepareHaptics() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         

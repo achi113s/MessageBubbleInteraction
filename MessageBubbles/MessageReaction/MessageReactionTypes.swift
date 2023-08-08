@@ -1,42 +1,11 @@
 //
-//  MessageReaction.swift
+//  MessageReactionTypes.swift
 //  MessageBubbles
 //
-//  Created by Giorgio Latour on 7/26/23.
+//  Created by Giorgio Latour on 8/7/23.
 //
 
 import SwiftUI
-
-struct MessageReaction: View {
-    private var symbol: String
-    private var color: Color
-    private var size: CGFloat = 30
-    private var description: MessageReactionType
-    
-    init(symbol: String, color: Color, size: CGFloat, description: MessageReactionType) {
-        self.symbol = symbol
-        self.color = color
-        self.size = size
-        self.description = description
-    }
-    
-    var body: some View {
-        Image(systemName: symbol)
-            .foregroundColor(color)
-            .font(.system(size: size))
-    }
-}
-
-struct MessageReaction_Previews: PreviewProvider {
-    static let symbol: String = "heart.fill"
-    static let color: Color = .pink
-    static let size: CGFloat = 30
-    static let description: MessageReactionType = .love
-    
-    static var previews: some View {
-        MessageReaction(symbol: symbol, color: color, size: size, description: description)
-    }
-}
 
 enum MessageReactionType: String {
     case reply
@@ -83,3 +52,4 @@ enum MessageReactionType: String {
         }
     }
 }
+

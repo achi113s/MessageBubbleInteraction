@@ -8,15 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    let message: String = "I've been studying iOS development for 5 months now! 🤩"
-    let user: String = "Giorgio"
-    
-    let message2: String = "Yeah!"
-    let user2: String = "Billy"
+    @StateObject var message1: MessageData = MessageData(
+        user: "Giorgio",
+        messageText: "I've been studying iOS development for 5 months now! 🤩",
+        reactions: []
+    )
     
     var body: some View {
         VStack {
-            Message(message: message, user: user)
+            MessageBubble(message1)
         }
     }
 }
